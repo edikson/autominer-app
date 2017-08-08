@@ -1,0 +1,29 @@
+{
+  "name": "autominer-app",
+  "productName": "OIP Autominer",
+  "version": "1.0.0",
+  "main": "main.js",
+  "license": "ISC",
+  "author": "Skylar Ostler (sky@alexandria.io)",
+  "scripts": {
+    "start": "electron .",
+    "postinstall": "electron-builder install-app-deps",
+    "package": "electron-packager ./ --platform=darwin --arch=x64 --out=out --icon=./icon.icns --overwrite"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/oipwg/autominer-app.git"
+  },
+  "bugs": {
+    "url": "https://github.com/oipwg/autominer-app/issues"
+  },
+  "homepage": "https://github.com/oipwg/autominer-app",
+  "devDependencies": {
+    "electron-builder": "^19.19.1",
+    "electron-packager": "^7.3.0",
+    "electron-prebuilt": "^1.2.7"
+  },
+  "dependencies": {
+    "autominer-api": "^1.0.0"
+  }
+}
