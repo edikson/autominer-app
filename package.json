@@ -24,6 +24,10 @@
     "electron-prebuilt": "^1.2.7"
   },
   "dependencies": {
-    "autominer-api": "^1.0.0"
+    "autominer-api": "git+https://github.com/oipwg/autominer-api.git",
+    "bootstrap": "^4.0.0-beta.3",
+    "eventemitter3": "^3.0.0",
+    "jquery": "^3.2.1",
+    "popper.js": "^1.12.9"
   }
 }

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>OIP AutoMiner App</title>
+		<link rel="stylesheet" type="text/css" href="node_modules/bootstrap/dist/css/bootstrap.min.css">
+	</head>
+	<body>
+		<div id="install1" class="container">
+			<br />
+			<h3>Setup OIP Autominer</h3>
+			<p>It looks like you have not yet setup the Autominer yet, please follow the directions found here: <a href="https://bit.ly/2rAVVVi">bit.ly/2rAVVVi</a></p>
+			<div class="form-group">
+				<label for="mrr_api_key">MRR API Key</label>
+				<input type="text" class="form-control" id="mrr_api_key" placeholder="...">
+				<small class="form-text text-muted">
+					Please enter your MiningRigRentals API Key
+				</small>
+			</div>
+			<div class="form-group">
+				<label for="mrr_api_secret">MRR API Secret</label>
+				<input type="password" class="form-control" id="mrr_api_secret" placeholder="">
+				<small class="form-text text-muted">
+					Please enter your MiningRigRentals API Secret
+				</small>
+			</div>
+			<div class="form-group">
+				<label for="weekly_budget">Weekly Budget (in BTC)</label>
+				<input type="number" class="form-control" id="weekly_budget" placeholder="">
+				<small class="form-text text-muted">
+					How much BTC would you like to spend each week?
+				</small>
+			</div>
+			<div class="form-group">
+				<label for="min_margin">Minimum Margin</label>
+				<input type="number" class="form-control" id="min_margin" placeholder="">
+				<small class="form-text text-muted">
+					The "minimum margin" is the threashold at which it will begin mining. If this is set to 0, then it will always rent, however if you set it to anything higher, it will wait until the margin is met to begin mining.
+				</small>
+			</div>
+			<div class="form-group">
+				<label for="rpi_min">RPI Minimum</label>
+				<input type="number" class="form-control" id="rpi_min" placeholder="">
+				<small class="form-text text-muted">
+					The RPI threashold is the minimum machine avaialbilty that will be accepted. An RPI threashold of 80 is standard.
+				</small>
+			</div>
+			<div class="form-group">
+				<label for="max_diff">Max Difficulty</label>
+				<input type="number" class="form-control" id="max_diff" placeholder="">
+				<small class="form-text text-muted">
+					Please enter the maximum difficulty at which you want to mine (Optional)
+				</small>
+			</div>
+			<button class="btn btn-outline-primary" onclick="trySetup()">Submit Info</button>
+			<br />
+			<br />
+		</div>
+		<div id="install2" class="container" style="display: none;">
+			<div class="form-group">
+				<label for="exampleFormControlSelect1">Select Profile to use</label>
+				<select class="form-control" id="profile_id_select">
+					<option value="81376">Profile 1 | ID: 81376</option>
+				</select>
+				<button class="btn btn-outline-primary" onclick="finishSetup()">Select Profile</button>
+			</div>
+		</div>
+		<div class="card-body text-white bg-dark" style="display: none; height: 425px; width: 600px; white-space: pre-wrap; font-size: 12px; overflow-y: scroll;" id="cardLog">
+			<span id="log"></span>
+		</div>
+	</body>
+	<script>if (typeof module === 'object') {window.module = module; module = undefined;}</script>
+	<script type="text/javascript" src="node_modules/jquery/dist/jquery.min.js"></script>
+	<script type="text/javascript" src="node_modules/popper.js/dist/popper.min.js"></script>
+	<script type="text/javascript" src="node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
+	<script>if (window.module) module = window.module;</script>
+	<script>
+		const {ipcRenderer} = require('electron')
+
+		let shell = require('electron').shell
+		document.addEventListener('click', function (event) {
+			if (event.target.tagName === 'A' && event.target.href.startsWith('http')) {
+				event.preventDefault()
+				shell.openExternal(event.target.href)
+			}
+		})
+
+		ipcRenderer.on('log-reply', (event, log) => {
+			document.getElementById("log").innerHTML = log;
+			updateScroll();
+		})
+
+		setInterval(function(){
+			ipcRenderer.send('get-log', '');
+		}, 1000)
+
+		setInterval(updateScroll, 1000);
+
+		var scrolled = false;
+		function updateScroll(){
+		    if(!scrolled){
+		        var element = document.getElementById("cardLog");
+		        element.scrollTop = element.scrollHeight;
+		    }
+		}
+
+		$("#cardLog").on('scroll', function(){
+		    scrolled = true;
+		});
+
+		var hideAll = function(){
+			document.getElementById('install1').style.display = "none";
+			document.getElementById('install2').style.display = "none";
+			document.getElementById('cardLog').style.display = "none";
+		}
+
+		var showInstall1 = function(){
+			hideAll();
+			document.getElementById('install1').style.display = "block";
+		}
+		var showInstall2 = function(){
+			hideAll();
+			document.getElementById('install2').style.display = "block";
+		}
+		var showCardLog = function(){
+			hideAll();
+			document.getElementById('cardLog').style.display = "block";
+		}
+
+		ipcRenderer.on('installComplete', function(event, complete){
+			if (!complete)
+				showInstall1();
+			else
+				showCardLog();
+		})
+
+		ipcRenderer.send('shouldInstall', '')
+
+		var trySetup = function(){
+
+			var profFunc = function(profiles, selectProfileID){
+				console.log(profiles);
+			}
+			var args = {
+				"MRR_API_key": document.getElementById('mrr_api_key').value,
+				"MRR_API_secret": document.getElementById('mrr_api_secret').value,
+				"weekly_budget_btc": document.getElementById('weekly_budget').value,
+				"min_margin": document.getElementById('min_margin').value,
+				"RPI_threshold": document.getElementById('rpi_min').value,
+				"max_difficulty": document.getElementById('max_diff').value
+			}
+
+			ipcRenderer.send('trySetup', args)
+		}
+
+		finishSetup = function(){
+			var x = document.getElementById('profile_id_select');
+			ipcRenderer.send('finishSetup', x.options[x.selectedIndex].value);
+		}
+
+		ipcRenderer.on('step1Complete', function(event, profiles, select){
+			showInstall2();
+
+			var x = document.getElementById("profile_id_select");
+
+			// Remove all elements
+			while (x.firstChild) {
+				x.removeChild(x.firstChild);
+			}
+
+			for (var i = 0; i < profiles.length; i++){
+				var option = document.createElement("option");
+				option.text = "Name: " + profiles[i].name + " | ID: " + profiles[i].id;
+				option.value = profiles[i].id;
+				x.add(option);
+			}
+		})
+	</script>
+</html>

@@ -1,7 +1,46 @@
 const {app, BrowserWindow, ipcMain, Tray} = require('electron')
 const path = require('path')
+const url = require('url')
+
+var log = "Starting...\n";
+var selectProfileIDCallback;
+
+ipcMain.on('get-log', (event, arg) => {
+  event.sender.send('log-reply', log)
+})
+
+ipcMain.on('trySetup', (event, args) => {
+  amapi.setupInstall(args.MRR_API_key, args.MRR_API_secret, args.weekly_budget_btc, args.min_margin, args.RPI_threshold, args.max_difficulty, "Asdfa2rtga56q", function(profiles, selectProfileID){
+    event.sender.send('step1Complete', profiles);
+    selectProfileIDCallback = selectProfileID;
+  }, function(error){
+    console.error(error);
+  })
+})
+
+ipcMain.on('finishSetup', (event, id) => {
+  selectProfileIDCallback(id);
+  event.sender.send("installComplete", true)
+})
 
 const amapi = require('autominer-api');
+
+amapi.onEvent("log", function(message){
+  console.log(message);
+  log += message + "\n";
+})
+amapi.onEvent("error", function(message){
+  console.log(message);
+  log += message + "\n";
+})
+
+ipcMain.on('shouldInstall', (event, args) => {
+  if (!amapi.doesConfigExist()){
+    event.sender.send("installComplete", false)
+  } else {
+    event.sender.send("installComplete", true)
+  }
+})
 
 const assetsDirectory = path.join(__dirname, 'assets')
 
@@ -30,8 +69,9 @@ const createTray = () => {
 
     // Show devtools when command clicked
     if (window.isVisible() && process.defaultApp && event.metaKey) {
-      window.openDevTools({mode: 'detach'})
+      // window.openDevTools({mode: 'detach'})
     }
+    window.openDevTools({mode: 'detach'})
   })
 }
 
@@ -54,9 +94,9 @@ const createWindow = () => {
   const display = screen.getPrimaryDisplay()
 
   window = new BrowserWindow({
-    width: display.workArea.width - 100,
-    height: "100%",
-    show: false,
+    width: 600,
+    height: 425,
+    show: true,
     frame: false,
     fullscreenable: false,
     resizable: false,
@@ -67,7 +107,11 @@ const createWindow = () => {
       backgroundThrottling: false
     }
   })
-  window.loadURL(`http://localhost:3123/`);
+  window.loadURL(url.format({
+    pathname: path.join(__dirname, 'index.html'),
+    protocol: 'file:',
+    slashes: true
+  }));
 
   //window.toggleDevTools();
 
