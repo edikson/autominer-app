@@ -1,4 +1,4 @@
-const {app, BrowserWindow, ipcMain, Tray} = require('electron')
+const {app, BrowserWindow, ipcMain, Tray, Menu} = require('electron')
 const path = require('path')
 const url = require('url')
 
@@ -25,14 +25,16 @@ ipcMain.on('finishSetup', (event, id) => {
 
 const amapi = require('autominer-api');
 
-amapi.onEvent("log", function(message){
-  console.log(message);
-  log += message + "\n";
-})
-amapi.onEvent("error", function(message){
-  console.log(message);
-  log += message + "\n";
-})
+if (amapi && amapi.onEvent){
+  amapi.onEvent("log", function(message){
+    console.log(message);
+    log += message + "\n";
+  })
+  amapi.onEvent("error", function(message){
+    console.log(message);
+    log += message + "\n";
+  })
+}
 
 ipcMain.on('shouldInstall', (event, args) => {
   if (!amapi.doesConfigExist()){
@@ -57,22 +59,27 @@ app.on('ready', () => {
 
 // Quit the app when the window is closed
 app.on('window-all-closed', () => {
-  app.quit()
+  // app.quit()
 })
 
 const createTray = () => {
   tray = new Tray(path.join(assetsDirectory, 'classic-computer.png'))
-  tray.on('right-click', toggleWindow)
-  tray.on('double-click', toggleWindow)
-  tray.on('click', function (event) {
-    toggleWindow()
+  // tray.on('right-click', toggleWindow)
+  // tray.on('double-click', toggleWindow)
+  // tray.on('click', function (event) {
+  //   toggleWindow()
 
-    // Show devtools when command clicked
-    if (window.isVisible() && process.defaultApp && event.metaKey) {
-      // window.openDevTools({mode: 'detach'})
-    }
-    window.openDevTools({mode: 'detach'})
-  })
+  //   // Show devtools when command clicked
+  //   if (window.isVisible() && process.defaultApp && event.metaKey) {
+  //     // window.openDevTools({mode: 'detach'})
+  //   }
+  // })
+
+  const contextMenu = Menu.buildFromTemplate([
+    {label: 'Show/Hide Window', click: function(){ toggleWindow() }},
+    {label: 'Quit', click: function(){ quitting = true; app.quit() }}
+  ])
+  tray.setContextMenu(contextMenu)
 }
 
 const getWindowPosition = () => {
@@ -88,6 +95,8 @@ const getWindowPosition = () => {
   return {x: x, y: y}
 }
 
+var quitting = false;
+
 const createWindow = () => {
 
   const screen = require('electron').screen
@@ -97,10 +106,10 @@ const createWindow = () => {
     width: 600,
     height: 425,
     show: true,
-    frame: false,
+    frame: true,
     fullscreenable: false,
     resizable: false,
-    transparent: true,
+    transparent: false,
     webPreferences: {
       // Prevents renderer process code from not running when window is
       // hidden
@@ -114,11 +123,13 @@ const createWindow = () => {
   }));
 
   //window.toggleDevTools();
+  window.openDevTools({mode: 'detach'})
 
   // Hide the window when it loses focus
-  window.on('blur', () => {
-    if (!window.webContents.isDevToolsOpened()) {
+  window.on('close', (event) => {
+    if (!quitting){
       window.hide()
+      event.preventDefault()
     }
   })
 }
@@ -132,9 +143,9 @@ const toggleWindow = () => {
 }
 
 const showWindow = () => {
-  window.reload();
-  const position = getWindowPosition()
-  window.setPosition(position.x, position.y, false)
+  // window.reload();
+  // const position = getWindowPosition()
+  // window.setPosition(position.x, position.y, false)
   window.show()
   window.focus()
 }
