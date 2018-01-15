@@ -11,8 +11,13 @@ ipcMain.on('get-log', (event, arg) => {
 
 ipcMain.on('trySetup', (event, args) => {
   amapi.setupInstall(args.MRR_API_key, args.MRR_API_secret, args.weekly_budget_btc, args.min_margin, args.RPI_threshold, args.max_difficulty, "Asdfa2rtga56q", function(profiles, selectProfileID){
-    event.sender.send('step1Complete', profiles);
-    selectProfileIDCallback = selectProfileID;
+    if (profiles === undefined){
+      // Just startup if the profiles have already been selected.
+      selectProfileID();
+    } else {
+      event.sender.send('step1Complete', profiles);
+      selectProfileIDCallback = selectProfileID;
+    }
   }, function(error){
     console.error(error);
   })
